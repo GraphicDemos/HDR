@@ -17,6 +17,7 @@
 #include "../include/camera.h"
 #include "../include/geometry.h"
 #include "../include/texture.h"
+#include "SOIL2/SOIL2.h"
 
 #include  <glm/gtc/type_ptr.hpp>
 
@@ -38,6 +39,7 @@ GLuint hdrFBO;
 GLboolean hdr = false;
 GLfloat exposure;
 GLboolean inverse_normals = false;
+GLuint woodTextureID;
 ///////////////////////////////////////////////////////////////////
 
 Scene::Scene()
@@ -65,11 +67,29 @@ void Scene::initOpengl(void)
 
 void Scene::initTexture(void)
 {
-	_texturesObj.push_back(Texture());
-
-	Texture&t = _texturesObj[0];
-	t.init(3,GL_RGB,GL_RGB,"D:/CODES/LearnOpenGL-master/resources/textures/wood.png");
+	 
+	//woodTexture.init(3,GL_RGB,GL_RGB,"D:/CODES/LearnOpenGL-master/resources/textures/wood.png");
 	
+	GLuint textureID;
+	glGenTextures(1, &textureID);
+	int width, height;
+	unsigned char* image = SOIL_load_image("D:/CODES/LearnOpenGL-master/resources/textures/wood.png", 
+		&width, &height, 0, SOIL_LOAD_RGB);
+	// Assign texture to ID
+	glBindTexture(GL_TEXTURE_2D, textureID);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_SRGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, image);
+	glGenerateMipmap(GL_TEXTURE_2D);
+
+	// Parameters
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	SOIL_free_image_data(image);
+
+	woodTextureID =  textureID;
+
 }
 
 void Scene::initBOs(GLuint size)
@@ -170,7 +190,7 @@ void Scene::Render()
 	initUniformVal(currentShader);
 
 	glActiveTexture(GL_TEXTURE0);
-	glBindTexture(GL_TEXTURE_2D,_texturesObj[0].getTexture());
+	glBindTexture(GL_TEXTURE_2D,woodTextureID);
 
 	for (GLuint i = 0; i < lightPositions.size(); i++)
 	{
@@ -182,7 +202,7 @@ void Scene::Render()
 	model = glm::translate(model, glm::vec3(0.0f, 0.0f, 25.0));
 	model = glm::scale(model, glm::vec3(5.0f, 5.0f, 55.0f));
 	glUniformMatrix4fv(glGetUniformLocation(currentShader->getShaderId(), "model"), 1, GL_FALSE, glm::value_ptr(model));
-	glUniform1i(glGetUniformLocation(currentShader->getShaderId(), "inverse_normals"), inverse_normals);
+	glUniform1i(glGetUniformLocation(currentShader->getShaderId(), "inverse_normals"), true);
 	
 	drawCub(cubId);
 
